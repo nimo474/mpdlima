@@ -91,23 +91,25 @@
                     if (hasil.data.length === 0 && !hasil.isSubfolder) {
                         fileListElement.innerHTML = `<tr><td colspan="3" style="font-style:italic; color:#777;">(Folder kosong)</td></tr>`;
                     } else {
-                        hasil.data.forEach(item => {
-                            const isFolder = item.tipe === "Folder";
-                            const ikon = isFolder ? "📁" : "📄";
-                            
-                            // MODIFIKASI: Jika folder, link mengarah kembali ke dashboard.html dengan query ID folder baru
-                            const linkTujuan = isFolder ? `dashboard.html?folder=${item.id}` : item.url;
-                            const targetAttr = isFolder ? "" : 'target="_blank"';
+						hasil.data.forEach(item => {
+							// KEBAL PERBEDAAN DATA: Cek apakah tipe adalah 'Folder' atau nama diakhiri tanda garis miring (/)
+							const isFolder = item.tipe === "Folder" || item.nama.endsWith("/");
+							const ikon = isFolder ? "📁" : "📄";
+    
+							// Pastikan jika folder, link akan mengarah ke dashboard.html dengan query ID folder baru, bukan item.url
+							const linkTujuan = isFolder ? `dashboard.html?folder=${item.id}` : item.url;
+							const targetAttr = isFolder ? "" : 'target="_blank"';
 
-                            const baris = `
-                                <tr>
-                                    <td>${ikon} <a href="${linkTujuan}" ${targetAttr}>${item.nama}</a></td>
-                                    <td class="text-right">${item.diubah}</td>
-                                    <td class="text-right">${item.ukuran}</td>
-                                </tr>
-                            `;
-                            fileListElement.innerHTML += baris;
-                        });
+							const baris = `
+								<tr>
+									<td>${ikon} <a href="${linkTujuan}" ${targetAttr}>${item.nama}</a></td>
+									<td class="text-right">${item.diubah}</td>
+									<td class="text-right">${item.ukuran}</td>
+								</tr>
+							`;
+							fileListElement.innerHTML += baris;
+						});
+
                     }
                     
                     document.getElementById("statusLoading").style.display = "none";
