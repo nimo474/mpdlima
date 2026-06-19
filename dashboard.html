@@ -3,45 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Utama</title>
+    <title>Index of /Sharedmpd5files</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        body { font-family: monospace; background: #ffffff; color: #000000; padding: 20px; margin: 0; }
+        .header-area { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 24px; }
+        .logout-btn { background: #db4437; color: white; border: none; padding: 5px 10px; cursor: pointer; font-family: monospace; font-weight: bold; }
+        .logout-btn:hover { background: #b52b1e; }
         
-        /* Gaya Desain Tombol Akses Folder */
-        .btn-drive { display: inline-block; width: 100%; padding: 14px; margin-top: 20px; background: #1f9a55; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; text-decoration: none; box-sizing: border-box; transition: background 0.2s; }
-        .btn-drive:hover { background: #167e43; }
-        
-        .btn-logout { width: 100%; padding: 12px; background: #db4437; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.2s; }
-        .btn-logout:hover { background: #c53929; }
-        p { color: #555; font-size: 15px; line-height: 1.5; }
+        /* Gaya Tabel Direktori Klasik Webserver */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 5px 10px; }
+        th { border-bottom: 2px solid #000; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+        a { color: #0000ee; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .text-right { text-align: right; }
+        .loading { font-style: italic; color: #555; margin-top: 15px; }
+        footer { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 12px; color: #555; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Selamat Datang! 🎉</h2>
-        <p>Halo, <b id="userTerlogin"></b>. Anda berhasil masuk ke sistem.</p>
-        
-        <!-- TOMBOL MENU MENUJU GOOGLE DRIVE -->
-        <a href="https://drive.google.com/drive/folders/1Am9znV4W1_w7VCQt74lKS1YU_rJhiv57?usp=sharing" target="_blank" class="btn-drive">
-            📁 Buka Folder Sharedmpd5files
-        </a>
-
-        <button onclick="logout()" class="btn-logout">Keluar</button>
+    <div class="header-area">
+        <h1>Index of /Sharedmpd5files</h1>
+        <div>
+            User: <b id="userTerlogin"></b> | 
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
     </div>
 
+    <div id="statusLoading" class="loading">Memuat daftar file dari Google Drive direktori...</div>
+
+    <!-- TABEL DIREKTORI FILE -->
+    <table id="dirTable" style="display: none;">
+        <thead>
+            <tr>
+                <th>Nama File</th>
+                <th class="text-right" style="width: 150px;">Terakhir Diubah</th>
+                <th class="text-right" style="width: 100px;">Ukuran</th>
+            </tr>
+        </thead>
+        <tbody id="fileList">
+            <!-- Data file dari Google Drive akan diisi otomatis di sini oleh JavaScript -->
+        </tbody>
+    </table>
+
+    <footer>
+        <p>Sistem Cloud Webserver Terkoneksi Google Drive Api v3 via Apps Script.</p>
+    </footer>
+
     <script>
-        // PROTEKSI KEAMANAN: Jika mencoba buka URL ini tanpa login, usir kembali ke halaman depan
+        // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI (Ujung URL bertuliskan /exec)
+        const API_URL = "https://script.google.com/macros/s/AKfycbzw2eTcXAYBKwZbJIvkclJ92K5gZukBdW1ntuH6e3v3NTy-ZKYXFmyJ2Aaib50RBy8/exec"; 
+
+        // PROTEKSI KEAMANAN SISI KLIEN
         if (!sessionStorage.getItem("user")) {
             window.location.href = "index.html";
         } else {
             document.getElementById("userTerlogin").innerText = sessionStorage.getItem("user");
+            muatIsiDirektori();
+        }
+
+        async function muatIsiDirektori() {
+            try {
+                // Memanggil Google Apps Script menggunakan metode GET
+                const response = await fetch(API_URL);
+                const hasil = await response.json();
+                
+                if (hasil.status === "success") {
+                    const fileListElement = document.getElementById("fileList");
+                    fileListElement.innerHTML = ""; // Bersihkan kontainer tabel
+                    
+                    if (hasil.data.length === 0) {
+                        fileListElement.innerHTML = `<tr><td colspan="3" style="font-style:italic; color:#777;">(Folder kosong atau tidak ada file publik)</td></tr>`;
+                    } else {
+                        // Susun baris tabel untuk setiap file layaknya tampilan server Apache
+                        hasil.data.forEach(file => {
+                            const baris = `
+                                <tr>
+                                    <td>📄 <a href="${file.url}" target="_blank">${file.nama}</a></td>
+                                    <td class="text-right">${file.diubah}</td>
+                                    <td class="text-right">${file.ukuran}</td>
+                                </tr>
+                            `;
+                            fileListElement.innerHTML += baris;
+                        });
+                    }
+                    
+                    // Sembunyikan loading tulisan, tampilkan tabel penuh
+                    document.getElementById("statusLoading").style.display = "none";
+                    document.getElementById("dirTable").style.display = "table";
+                } else {
+                    document.getElementById("statusLoading").innerText = "Gagal memuat direktori: " + hasil.message;
+                }
+            } catch (error) {
+                document.getElementById("statusLoading").innerText = "Terjadi kesalahan fatal koneksi API Drive.";
+                console.error(error);
+            }
         }
 
         function logout() {
-            sessionStorage.clear(); // Hapus jejak login
-            window.location.href = "index.html"; // Tendang ke form login
+            sessionStorage.clear();
+            window.location.href = "index.html";
         }
     </script>
 </body>
