@@ -26,12 +26,13 @@
     </div>
 
     <!-- BOX DASHBOARD (SETELAH LOGIN BERHASIL) -->
-    <div class="container" id="dashboard">
+    <!-- (((baris2 berikut ini diubah menjadi dashboard.html))) 
+	<div class="container" id="dashboard">
         <h2>Selamat Datang! 🎉</h2>
         <p>Halo, <b id="userTerlogin"></b>. Anda berhasil masuk menggunakan basis data Google Drive.</p>
         <button style="background: #db4437;" onclick="logout()">Keluar</button>
     </div>
-
+	-->
     <script>
         // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
         const API_URL = "https://script.google.com/macros/s/AKfycbzw2eTcXAYBKwZbJIvkclJ92K5gZukBdW1ntuH6e3v3NTy-ZKYXFmyJ2Aaib50RBy8/exec"; 
@@ -74,7 +75,8 @@
                         // Simpan data login ke memori browser lokal (Session Storage)
                         sessionStorage.setItem("user", hasil.username);
                         sessionStorage.setItem("token", hasil.token);
-                        cekSession();
+                        //cekSession(); ini diremark karena diarahkan ke dashboard.html yaitu di baris berikut ini:
+						window.location.href = "dashboard.html";
                     } else {
                         ubahMode();
                     }
