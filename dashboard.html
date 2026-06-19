@@ -11,7 +11,6 @@
         .logout-btn { background: #db4437; color: white; border: none; padding: 5px 10px; cursor: pointer; font-family: monospace; font-weight: bold; }
         .logout-btn:hover { background: #b52b1e; }
         
-        /* Gaya Tabel Direktori Klasik Webserver */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { text-align: left; padding: 5px 10px; }
         th { border-bottom: 2px solid #000; font-weight: bold; }
@@ -26,26 +25,25 @@
 <body>
 
     <div class="header-area">
-        <h1>Index of /Sharedmpd5files</h1>
+        <h1 id="dirTitle">Index of /Sharedmpd5files</h1>
         <div>
             User: <b id="userTerlogin"></b> | 
             <button class="logout-btn" onclick="logout()">Logout</button>
         </div>
     </div>
 
-    <div id="statusLoading" class="loading">Memuat daftar file dari Google Drive direktori...</div>
+    <div id="statusLoading" class="loading">Memuat daftar direktori...</div>
 
-    <!-- TABEL DIREKTORI FILE -->
     <table id="dirTable" style="display: none;">
         <thead>
             <tr>
-                <th>Nama File</th>
+                <th>Nama File / Folder</th>
                 <th class="text-right" style="width: 150px;">Terakhir Diubah</th>
                 <th class="text-right" style="width: 100px;">Ukuran</th>
             </tr>
         </thead>
         <tbody id="fileList">
-            <!-- Data file dari Google Drive akan diisi otomatis di sini oleh JavaScript -->
+            <!-- Data akan diisi oleh JavaScript -->
         </tbody>
     </table>
 
@@ -54,7 +52,6 @@
     </footer>
 
     <script>
-        // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI (Ujung URL bertuliskan /exec)
         const API_URL = "https://script.google.com/macros/s/AKfycbzw2eTcXAYBKwZbJIvkclJ92K5gZukBdW1ntuH6e3v3NTy-ZKYXFmyJ2Aaib50RBy8/exec"; 
 
         // PROTEKSI KEAMANAN SISI KLIEN
@@ -67,38 +64,56 @@
 
         async function muatIsiDirektori() {
             try {
-                // Memanggil Google Apps Script menggunakan metode GET
-                const response = await fetch(API_URL);
+                // 1. Ambil parameter ID folder dari URL browser jika ada (?folder=xxxx)
+                const urlParams = new URLSearchParams(window.location.search);
+                const targetFolderId = urlParams.get('folder') || ""; 
+
+                // 2. Panggil API dengan menyertakan ID folder tujuan
+                const response = await fetch(`${API_URL}?folderId=${targetFolderId}`);
                 const hasil = await response.json();
                 
                 if (hasil.status === "success") {
+                    // Update judul direktori sesuai nama folder aktif
+                    document.getElementById("dirTitle").innerText = `Index of /${hasil.namaFolder}`;
+
                     const fileListElement = document.getElementById("fileList");
-                    fileListElement.innerHTML = ""; // Bersihkan kontainer tabel
+                    fileListElement.innerHTML = ""; 
                     
-                    if (hasil.data.length === 0) {
-                        fileListElement.innerHTML = `<tr><td colspan="3" style="font-style:italic; color:#777;">(Folder kosong atau tidak ada file publik)</td></tr>`;
+                    // Tombol Kembali ke Induk jika sedang berada di dalam subfolder
+                    if (hasil.isSubfolder) {
+                        fileListElement.innerHTML += `
+                            <tr>
+                                <td colspan="3">📁 <a href="dashboard.html${hasil.parentFolderId ? '?folder=' + hasil.parentFolderId : ''}">.. (Kembali ke Folder Atas)</a></td>
+                            </tr>
+                        `;
+                    }
+
+                    if (hasil.data.length === 0 && !hasil.isSubfolder) {
+                        fileListElement.innerHTML = `<tr><td colspan="3" style="font-style:italic; color:#777;">(Folder kosong)</td></tr>`;
                     } else {
-                        // Susun baris tabel untuk setiap file layaknya tampilan server Apache
-                        hasil.data.forEach(file => {
-						// Berikan ikon folder jika tipenya adalah Folder, jika tidak berikan ikon file biasa
-							const ikon = file.tipe === "Folder" ? "📁" : "📄";
-    
-							const baris = `
-								<tr>
-									<td>${ikon} <a href="${file.url}" target="_blank">${file.nama}</a></td>
-									<td class="text-right">${file.diubah}</td>
-									<td class="text-right">${file.ukuran}</td>
-								</tr>
-							`;
-							fileListElement.innerHTML += baris;
-						});
+                        hasil.data.forEach(item => {
+                            const isFolder = item.tipe === "Folder";
+                            const ikon = isFolder ? "📁" : "📄";
+                            
+                            // MODIFIKASI: Jika folder, link mengarah kembali ke dashboard.html dengan query ID folder baru
+                            const linkTujuan = isFolder ? `dashboard.html?folder=${item.id}` : item.url;
+                            const targetAttr = isFolder ? "" : 'target="_blank"';
+
+                            const baris = `
+                                <tr>
+                                    <td>${ikon} <a href="${linkTujuan}" ${targetAttr}>${item.nama}</a></td>
+                                    <td class="text-right">${item.diubah}</td>
+                                    <td class="text-right">${item.ukuran}</td>
+                                </tr>
+                            `;
+                            fileListElement.innerHTML += baris;
+                        });
                     }
                     
-                    // Sembunyikan loading tulisan, tampilkan tabel penuh
                     document.getElementById("statusLoading").style.display = "none";
                     document.getElementById("dirTable").style.display = "table";
                 } else {
-                    document.getElementById("statusLoading").innerText = "Gagal memuat direktori: " + hasil.message;
+                    document.getElementById("statusLoading").innerText = "Gagal: " + hasil.message;
                 }
             } catch (error) {
                 document.getElementById("statusLoading").innerText = "Terjadi kesalahan fatal koneksi API Drive.";
