@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Login Menu</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+        button { width: 100%; padding: 12px; background: #4285F4; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #357ae8; }
+        .toggle-link { margin-top: 15px; font-size: 14px; color: #666; cursor: pointer; display: block; }
+        #dashboard { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- BOX AUTENTIKASI -->
+    <div class="container" id="authBox">
+        <h2 id="formTitle">Masuk Sistem</h2>
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button id="mainBtn" onclick="prosesData()">Login</button>
+        <span class="toggle-link" id="toggleForm" onclick="ubahMode()">Belum punya akun? Daftar</span>
+    </div>
+
+    <!-- BOX DASHBOARD (SETELAH LOGIN BERHASIL) -->
+    <div class="container" id="dashboard">
+        <h2>Selamat Datang! 🎉</h2>
+        <p>Halo, <b id="userTerlogin"></b>. Anda berhasil masuk menggunakan basis data Google Drive.</p>
+        <button style="background: #db4437;" onclick="logout()">Keluar</button>
+    </div>
+
+    <script>
+        // MASUKKAN URL GOOGLE APPS SCRIPT ANDA DI SINI
+        const API_URL = "https://script.google.com/macros/s/AKfycbzw2eTcXAYBKwZbJIvkclJ92K5gZukBdW1ntuH6e3v3NTy-ZKYXFmyJ2Aaib50RBy8/exec"; 
+
+        let modeRegister = false;
+
+        function ubahMode() {
+            modeRegister = !modeRegister;
+            document.getElementById("formTitle").innerText = modeRegister ? "Daftar Akun" : "Masuk Sistem";
+            document.getElementById("mainBtn").innerText = modeRegister ? "Registrasi" : "Login";
+            document.getElementById("toggleForm").innerText = modeRegister ? "Sudah punya akun? Login" : "Belum punya akun? Daftar";
+        }
+
+        async function prosesData() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+
+            if(!user || !pass) return alert("Isi semua kolom!");
+
+            document.getElementById("mainBtn").innerText = "Memproses...";
+            
+            const payload = {
+                action: modeRegister ? "register" : "login",
+                username: user,
+                password: pass
+            };
+
+            try {
+                // Mengirim data langsung ke cloud Google Sheets tanpa perantara PHP lokal
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                const hasil = await response.json();
+
+                alert(hasil.message);
+
+                if (hasil.status === "success") {
+                    if (!modeRegister) {
+                        // Simpan data login ke memori browser lokal (Session Storage)
+                        sessionStorage.setItem("user", hasil.username);
+                        sessionStorage.setItem("token", hasil.token);
+                        cekSession();
+                    } else {
+                        ubahMode();
+                    }
+                }
+            } catch (err) {
+                alert("Terjadi kegagalan sistem koneksi.");
+            }
+            document.getElementById("mainBtn").innerText = modeRegister ? "Registrasi" : "Login";
+        }
+
+        function cekSession() {
+            if(sessionStorage.getItem("user")) {
+                document.getElementById("authBox").style.display = "none";
+                document.getElementById("dashboard").style.display = "block";
+                document.getElementById("userTerlogin").innerText = sessionStorage.getItem("user");
+            }
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.reload();
+        }
+
+        // Jalankan pengecekan status login setiap halaman dimuat
+        cekSession();
+    </script>
+</body>
+</html>
