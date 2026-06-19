@@ -102,6 +102,18 @@
 
         // Jalankan pengecekan status login setiap halaman dimuat
         cekSession();
+
+        // ========================================================
+        // KODE BARU: Mendeteksi Enter dari kolom username maupun password
+        // ========================================================
+        ["username", "password"].forEach(id => {
+            document.getElementById(id).addEventListener("keydown", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault(); // Mencegah form reload otomatis
+                    prosesData();            // Menjalankan fungsi login
+                }
+            });
+        });
     </script>
 </body>
 </html>
