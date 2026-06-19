@@ -80,15 +80,18 @@
                     } else {
                         // Susun baris tabel untuk setiap file layaknya tampilan server Apache
                         hasil.data.forEach(file => {
-                            const baris = `
-                                <tr>
-                                    <td>📄 <a href="${file.url}" target="_blank">${file.nama}</a></td>
-                                    <td class="text-right">${file.diubah}</td>
-                                    <td class="text-right">${file.ukuran}</td>
-                                </tr>
-                            `;
-                            fileListElement.innerHTML += baris;
-                        });
+						// Berikan ikon folder jika tipenya adalah Folder, jika tidak berikan ikon file biasa
+							const ikon = file.tipe === "Folder" ? "📁" : "📄";
+    
+							const baris = `
+								<tr>
+									<td>${ikon} <a href="${file.url}" target="_blank">${file.nama}</a></td>
+									<td class="text-right">${file.diubah}</td>
+									<td class="text-right">${file.ukuran}</td>
+								</tr>
+							`;
+							fileListElement.innerHTML += baris;
+						});
                     }
                     
                     // Sembunyikan loading tulisan, tampilkan tabel penuh
